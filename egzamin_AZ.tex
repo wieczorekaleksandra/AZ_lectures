@@ -1,0 +1,854 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,
+  citecolor=blue!50!black,pdftitle={Algorytmy zaawansowane -- opracowanie egzaminacyjne}}
+
+% --- srodowiska twierdzeniowe ---
+\theoremstyle{plain}
+\newtheorem{twierdzenie}{Twierdzenie}[section]
+\newtheorem{lemat}[twierdzenie]{Lemat}
+\newtheorem{wniosek}[twierdzenie]{Wniosek}
+\newtheorem{stwierdzenie}[twierdzenie]{Stwierdzenie}
+\theoremstyle{definition}
+\newtheorem{definicja}[twierdzenie]{Definicja}
+\newtheorem{przyklad}[twierdzenie]{Przykład}
+\newtheorem{uwaga}[twierdzenie]{Uwaga}
+
+\renewcommand{\proofname}{Dowód}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\eps}{\varepsilon}
+\DeclareMathOperator{\OPT}{OPT}
+
+% polskie nazwy w pseudokodzie
+\floatname{algorithm}{Algorytm}
+\renewcommand{\algorithmicrequire}{\textbf{Wejście:}}
+\renewcommand{\algorithmicensure}{\textbf{Wyjście:}}
+\renewcommand{\algorithmicwhile}{\textbf{dopóki}}
+\renewcommand{\algorithmicdo}{\textbf{wykonuj}}
+\renewcommand{\algorithmicend}{\textbf{koniec}}
+\renewcommand{\algorithmicif}{\textbf{jeżeli}}
+\renewcommand{\algorithmicthen}{\textbf{to}}
+\renewcommand{\algorithmicelse}{\textbf{w przeciwnym razie}}
+\renewcommand{\algorithmicfor}{\textbf{dla}}
+\renewcommand{\algorithmicreturn}{\textbf{zwróć}}
+
+\title{\textbf{Algorytmy zaawansowane}\\[2mm]
+\large Opracowanie zagadnień egzaminacyjnych\\
+\normalsize (algorytmy obowiązujące, twierdzenia z~dowodami, projektowanie algorytmów)}
+\author{Opracowanie na podstawie wykładów}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\bigskip
+
+\section*{Jak czytać to opracowanie}
+\addcontentsline{toc}{section}{Jak czytać to opracowanie}
+Egzamin obejmuje cztery typy zadań:
+\begin{enumerate}[label=\textbf{\arabic*.}]
+\item \textbf{Sformułować i~udowodnić twierdzenie} (pięć wskazanych twierdzeń) --- patrz
+sekcja~\ref{sec:tw} oraz dowody wplecione w~opisy algorytmów.
+\item \textbf{Zaprezentować działanie algorytmu na konkretnych danych} --- dla każdego z~11
+algorytmów podano w~pełni przeliczony przykład.
+\item \textbf{Zaprojektować modyfikację algorytmu} dla szczególnych danych --- sekcja~\ref{sec:projekt}.
+\item \textbf{Zaprojektować algorytm} (dokładny / przybliżony / wg zadanej strategii, o~zadanej
+złożoności), oszacować złożoność, udowodnić poprawność i~współczynnik jakości --- sekcja~\ref{sec:projekt}.
+\end{enumerate}
+Dla każdego algorytmu konsekwentnie podajemy: \emph{definicję problemu}, \emph{ideę i~strategię},
+\emph{pseudokod}, \emph{złożoność}, \emph{dowód poprawności} oraz \emph{przykład}.
+
+\section{Narzędzia: strategie, asymptotyka, twierdzenie o~rekurencji}\label{sec:tools}
+
+\subsection{Cztery strategie projektowe}
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{Dziel i~zwyciężaj.} Dzielimy problem na rozłączne podproblemy, rozwiązujemy je
+rekurencyjnie i~łączymy wyniki. (Para najbliższych punktów, mnożenie macierzy/liczb.)
+\item \textbf{Programowanie dynamiczne.} Wymaga \emph{własności optymalnej podstruktury}
+(rozwiązanie optymalne składa się z~optymalnych rozwiązań podproblemów) oraz
+\emph{nakładających się podproblemów} (mała, wielomianowa liczba różnych podproblemów).
+Budujemy rozwiązanie od dołu do góry lub przez spamiętywanie. (LCS, Matrix\hbox{-}Chain, Subset\hbox{-}Sum.)
+\item \textbf{Algorytmy zachłanne.} W~każdym kroku wybór lokalnie najlepszy; poprawność wymaga
+\emph{własności wyboru zachłannego} i~\emph{optymalnej podstruktury} (często: struktury matroidu).
+(Wybór zajęć, Huffman, szeregowanie zadań.)
+\item \textbf{Algorytmy aproksymacyjne.} Dla problemów trudnych (NP\hbox{-}trudnych) zwracamy rozwiązanie
+\emph{prawie optymalne} z~gwarantowanym współczynnikiem jakości. (Approx\hbox{-}Vertex\hbox{-}Cover,
+Greedy\hbox{-}Set\hbox{-}Cover, Approx\hbox{-}Subset\hbox{-}Sum.)
+\end{itemize}
+
+\subsection{Notacja asymptotyczna}
+Dla $f,g:\N\to\R_+$:
+\[
+g=O(f)\iff \exists c>0\,\exists n_0\,\forall n\ge n_0:\ g(n)\le c f(n);\quad
+g=\Omega(f)\iff f=O(g);\quad
+g=\Theta(f)\iff g=O(f)\wedge g=\Omega(f).
+\]
+
+\subsection{Uniwersalne twierdzenie o~rekurencji (Master Theorem)}
+\begin{twierdzenie}[Master Theorem]\label{tw:master}
+Niech $a\ge 1$, $b>1$ stałe i~$T(n)=a\,T(n/b)+f(n)$. Wtedy
+\[
+T(n)=
+\begin{cases}
+\Theta\!\big(n^{\log_b a}\big), & f(n)=O\!\big(n^{\log_b a-\eps}\big),\ \eps>0,\\[2pt]
+\Theta\!\big(n^{\log_b a}\log n\big), & f(n)=\Theta\!\big(n^{\log_b a}\big),\\[2pt]
+\Theta\!\big(f(n)\big), & f(n)=\Omega\!\big(n^{\log_b a+\eps}\big),\ \eps>0,\ \text{oraz }a f(n/b)\le c f(n),\ c<1.
+\end{cases}
+\]
+W~szczególności, jeśli $f(n)=\Theta(n^k)$, to porównujemy $\log_b a$ z~$k$:
+$T(n)=\Theta(n^{\log_b a})$ gdy $\log_b a>k$; $\Theta(n^k\log n)$ gdy $\log_b a=k$; $\Theta(n^k)$ gdy $\log_b a<k$.
+\end{twierdzenie}
+Przykłady użycia: para najbliższych punktów $T(n)=2T(n/2)+O(n)=\Theta(n\log n)$;
+Strassen $T(n)=7T(n/2)+\Theta(n^2)=\Theta(n^{\log_2 7})=\Theta(n^{2{,}81})$.
+
+\subsection{Współczynnik aproksymacji}\label{sec:approxdef}
+\begin{definicja}[współczynnik aproksymacji]\label{def:approx}
+Dla problemu optymalizacyjnego niech $c(I)$ będzie wartością rozwiązania zwróconego przez algorytm
+$A$ na instancji $I$, a~$c^\ast(I)$ wartością optymalną. Algorytm $A$ ma \emph{współczynnik
+aproksymacji} $\rho(n)$, jeśli dla każdej instancji rozmiaru $n$
+\[
+\max\!\left\{\frac{c(I)}{c^\ast(I)},\ \frac{c^\ast(I)}{c(I)}\right\}\le \rho(n).
+\]
+\end{definicja}
+Konwencja daje $\rho(n)\ge 1$: dla minimalizacji $c\ge c^\ast$, więc $\rho=c/c^\ast$; dla
+maksymalizacji $c\le c^\ast$, więc $\rho=c^\ast/c$. $\rho=1$ oznacza algorytm dokładny.
+
+\bigskip
+\hrule
+\bigskip
+\begin{center}\Large\textbf{Część A. Algorytmy obowiązujące}\end{center}
+
+\section{Para najbliższych punktów na płaszczyźnie}\label{sec:closest}
+\textbf{Strategia:} dziel i~zwyciężaj. \quad\textbf{Złożoność:} $\Theta(n\log n)$.
+
+\subsection*{Problem}
+Dany zbiór $Q$ z~$n\ge 2$ punktów na płaszczyźnie. Znaleźć parę punktów o~najmniejszej odległości
+euklidesowej $d(p_1,p_2)=\sqrt{(x_1-x_2)^2+(y_1-y_2)^2}$. Metoda siłowa: $\binom{n}{2}=\Theta(n^2)$.
+
+\subsection*{Idea algorytmu}
+W~każdym wywołaniu mamy zbiór $P$ oraz tablice $X$ (punkty $P$ posortowane po~$x$) i~$Y$
+(posortowane po~$y$). Jeśli $|P|\le 3$ --- sprawdzamy wszystkie pary.
+\begin{description}[leftmargin=2em,style=nextline]
+\item[Dziel] Pionowa prosta $l$ dzieli $P$ na $P_L$ (lewe, $\lceil|P|/2\rceil$) i~$P_R$ (prawe,
+$\lfloor|P|/2\rfloor$). Tablice $X,Y$ dzielimy w~czasie $O(n)$ na $X_L,X_R,Y_L,Y_R$ z~zachowaniem
+posortowania.
+\item[Zwyciężaj] Rekurencyjnie liczymy $\delta_L,\delta_R$; niech $\delta=\min(\delta_L,\delta_R)$.
+\item[Połącz] Para o~odległości $<\delta$ łącząca strony leży w~pasie szerokości $2\delta$ wokół $l$.
+Tworzymy $Y'$ (punkty z~pasa, posortowane po~$y$) i~dla każdego $p\in Y'$ sprawdzamy odległość do
+\textbf{7 kolejnych} punktów w~$Y'$. Jeśli znaleziono parę $<\delta$, zwracamy ją, w~przeciwnym razie $\delta$.
+\end{description}
+
+\subsection*{Złożoność}
+Po jednorazowym wstępnym sortowaniu ($O(n\log n)$): $T(n)=2T(n/2)+O(n)=\Theta(n\log n)$
+(Tw.~\ref{tw:master}). Łącznie $O(n\log n)$.
+
+\subsection*{Poprawność}
+\begin{twierdzenie}[poprawność algorytmu pary najbliższych punktów]\label{tw:closest}
+W~fazie Połącz wystarczy dla każdego $p\in Y'$ porównać $p$ z~jego $7$ kolejnymi punktami w~$Y'$,
+aby na pewno znaleźć parę najbliższą, jeżeli realizuje ją para typu „lewy--prawy''.
+\end{twierdzenie}
+\begin{proof}
+Niech $p,q$ będzie parą najbliższą i~$d(p,q)=\delta'<\delta$, $p=(x_p,y_p)$, $q=(x_q,y_q)$, $y_p\le y_q$.
+Oba punkty leżą w~pasie, więc są w~$Y'$. Ponieważ
+$y_q-y_p\le d(p,q)<\delta$, wszystkie punkty $Y'$ „między'' $p$ a~$q$ (włącznie) leżą w~prostokącie
+$2\delta\times\delta$ (szerokość pasa $2\delta$, wysokość $<\delta$). Podzielmy go na lewy i~prawy
+kwadrat $\delta\times\delta$. W~jednym kwadracie $\delta\times\delta$ wszystkie punkty pochodzą z~tej
+samej strony ($P_L$ lub $P_R$), a~tam minimalna odległość to $\ge\delta$. W~kwadracie $\delta\times\delta$
+nie da się rozmieścić więcej niż $4$ punktów parami oddalonych o~$\ge\delta$, więc w~każdym kwadracie
+jest $\le 4$ punktów, łącznie $\le 8$ w~prostokącie. Zatem między $p$ a~$q$ w~$Y'$ jest co najwyżej $6$
+punktów, czyli $q$ jest jednym z~$7$ kolejnych po~$p$. Wystarczy więc sprawdzić $7$ następników.
+\end{proof}
+
+\subsection*{Przykład}
+$Q=\{(2,3),(12,30),(40,50),(5,1),(12,10),(3,4)\}$. Punkty $(2,3)$ i~$(3,4)$ dają
+$d=\sqrt{1+1}=\sqrt2\approx1{,}41$ --- najmniejsza odległość. Linia podziału rozdziela zbiór; w~lewej
+części $\{(2,3),(5,1),(3,4)\}$ sprawdzenie wszystkich par (bo $\le3$) zwraca $\delta_L=\sqrt2$; prawa
+część daje większe $\delta_R$; w~pasie szerokości $2\sqrt2$ nie pojawia się mniejsza para, więc wynik
+to $\big((2,3),(3,4)\big)$ z~odległością $\sqrt2$.
+
+\section{Matrix-Multiply i~Matrix-Chain-Order}\label{sec:matrix}
+\textbf{Strategia:} (Strassen) dziel i~zwyciężaj; (nawiasowanie) programowanie dynamiczne.
+
+\subsection*{Mnożenie macierzy $A\cdot B$ ($n\times n$)}
+Klasycznie $\Theta(n^3)$. Dzieląc na bloki $\tfrac n2\times\tfrac n2$ naiwnie: $T(n)=8T(n/2)+\Theta(n^2)=\Theta(n^3)$.
+\textbf{Strassen} liczy $7$ iloczynów $M_1,\dots,M_7$:
+\[
+\begin{aligned}
+M_1&=(A_{12}-A_{22})(B_{21}+B_{22}), & M_2&=(A_{11}+A_{22})(B_{11}+B_{22}), & M_3&=(A_{11}-A_{21})(B_{11}+B_{12}),\\
+M_4&=(A_{11}+A_{12})B_{22}, & M_5&=A_{11}(B_{12}-B_{22}), & M_6&=A_{22}(B_{21}-B_{11}),\\
+M_7&=(A_{21}+A_{22})B_{11},
+\end{aligned}
+\]
+\[
+C_{11}=M_1+M_2-M_4+M_6,\quad C_{12}=M_4+M_5,\quad C_{21}=M_6+M_7,\quad C_{22}=M_2-M_3+M_5-M_7.
+\]
+$T(n)=7T(n/2)+\Theta(n^2)=\Theta(n^{\log_2 7})=\Theta(n^{2{,}81})$.
+
+\subsection*{Optymalne nawiasowanie ciągu macierzy}
+Wymiary $p=(p_0,\dots,p_n)$, $A_i$ ma wymiar $p_{i-1}\times p_i$. Mnożenie $p\times q$ przez $q\times r$
+kosztuje $pqr$. Mnożenie jest łączne; szukamy nawiasowania o~najmniejszej liczbie mnożeń skalarnych.
+
+\paragraph{Optymalna podstruktura.}
+\begin{twierdzenie}\label{tw:mco}
+Jeśli optymalne nawiasowanie $A_i\cdots A_j$ wykonuje ostatnie mnożenie między $A_k$ a~$A_{k+1}$, to
+nawiasowania podciągów $A_i\cdots A_k$ oraz $A_{k+1}\cdots A_j$ są optymalne.
+\end{twierdzenie}
+\begin{proof}
+Gdyby lewy podciąg dało się nawiasować taniej, podmiana zmniejszyłaby koszt całości (prawa część i~ostatnie
+mnożenie bez zmian) --- sprzeczność z~optymalnością. Analogicznie dla prawego.
+\end{proof}
+
+\paragraph{Rekurencja.}
+\[
+m[i,j]=\begin{cases}0,& i=j,\\[2pt]\displaystyle\min_{i\le k<j}\{m[i,k]+m[k+1,j]+p_{i-1}p_k p_j\},& i<j,\end{cases}
+\qquad s[i,j]=\arg\min.
+\]
+
+\begin{algorithm}[H]
+\caption{Matrix-Chain-Order($p$)}
+\begin{algorithmic}[1]
+\State $n\gets \mathrm{length}(p)-1$
+\For{$i=1$ \textbf{to} $n$} $m[i,i]\gets 0$ \EndFor
+\For{$\ell=2$ \textbf{to} $n$} \Comment{$\ell$ = długość podciągu}
+  \For{$i=1$ \textbf{to} $n-\ell+1$}
+     \State $j\gets i+\ell-1$; \ $m[i,j]\gets\infty$
+     \For{$k=i$ \textbf{to} $j-1$}
+        \State $q\gets m[i,k]+m[k+1,j]+p_{i-1}p_k p_j$
+        \If{$q<m[i,j]$} $m[i,j]\gets q$; \ $s[i,j]\gets k$ \EndIf
+     \EndFor
+  \EndFor
+\EndFor
+\State \Return $(m,s)$
+\end{algorithmic}
+\end{algorithm}
+Złożoność: $\Theta(n^2)$ podproblemów $\times\,O(n)$ podziałów $=\Theta(n^3)$ czasu, $\Theta(n^2)$ pamięci.
+Odtworzenie nawiasowania: rekurencyjnie z~$s$ (\textsc{Print-Optimal-Parens}).
+
+\subsection*{Przykład}
+$p=(10,100,5,50)$, czyli $A_1{:}10\times100$, $A_2{:}100\times5$, $A_3{:}5\times50$.
+Dwa nawiasowania:
+$((A_1A_2)A_3)$: $10\cdot100\cdot5+10\cdot5\cdot50=5000+2500=7500$;
+$(A_1(A_2A_3))$: $100\cdot5\cdot50+10\cdot100\cdot50=25000+50000=75000$.
+Optymalne to $((A_1A_2)A_3)$ z~kosztem $7500$ (tu $m[1,3]=7500$, $s[1,3]=2$).
+
+\section{Najdłuższy wspólny podciąg (LCS)}\label{sec:lcs}
+\textbf{Strategia:} programowanie dynamiczne. \quad\textbf{Złożoność:} $\Theta(mn)$.
+
+\subsection*{Problem}
+$Z$ jest \emph{podciągiem} $X=(x_1,\dots,x_m)$, jeśli istnieją indeksy $i_1<\dots<i_k$ z~$z_j=x_{i_j}$.
+Dla $X,Y$ szukamy najdłuższego wspólnego podciągu. Przeszukanie wszystkich $2^m$ podciągów --- wykładnicze.
+Oznaczamy $X_i=(x_1,\dots,x_i)$, $c[i,j]=|\mathrm{LCS}(X_i,Y_j)|$.
+
+\subsection*{Optymalna podstruktura}
+\begin{twierdzenie}[struktura LCS]\label{tw:lcs}
+Niech $Z=(z_1,\dots,z_k)$ będzie LCS ciągów $X,Y$.
+\begin{enumerate}[label=(\arabic*)]
+\item Jeśli $x_m=y_n$, to $z_k=x_m=y_n$ oraz $Z_{k-1}$ jest LCS $X_{m-1}$ i~$Y_{n-1}$.
+\item Jeśli $x_m\ne y_n$ i~$z_k\ne x_m$, to $Z$ jest LCS $X_{m-1}$ i~$Y$.
+\item Jeśli $x_m\ne y_n$ i~$z_k\ne y_n$, to $Z$ jest LCS $X$ i~$Y_{n-1}$.
+\end{enumerate}
+\end{twierdzenie}
+\begin{proof}
+(1) Gdyby $z_k\ne x_m$, można by dopisać $x_m=y_n$ do $Z$, tworząc wspólny podciąg długości $k+1$ ---
+sprzeczność, więc $z_k=x_m=y_n$. Ciąg $Z_{k-1}$ jest wspólnym podciągiem $X_{m-1},Y_{n-1}$; gdyby istniał
+dłuższy $W$, to $W$ z~dopisanym $x_m$ byłby wspólnym podciągiem $X,Y$ dłuższym niż $Z$ --- sprzeczność.
+(2),(3) Jeśli $z_k\ne x_m$, to $Z$ jest podciągiem $X_{m-1}$ i~$Y$; każdy dłuższy ich wspólny podciąg byłby
+też wspólnym podciągiem $X,Y$ --- sprzeczność. Przypadek (3) analogicznie.
+\end{proof}
+\[
+c[i,j]=\begin{cases}0,& i=0\text{ lub }j=0,\\
+c[i-1,j-1]+1,& i,j>0,\ x_i=y_j,\\
+\max\{c[i-1,j],\,c[i,j-1]\},& i,j>0,\ x_i\ne y_j.\end{cases}
+\]
+
+\begin{algorithm}[H]
+\caption{LCS($X,Y$)}
+\begin{algorithmic}[1]
+\State $m\gets\mathrm{length}(X)$; $n\gets\mathrm{length}(Y)$
+\For{$i=0$ \textbf{to} $m$} $c[i,0]\gets0$ \EndFor
+\For{$j=0$ \textbf{to} $n$} $c[0,j]\gets0$ \EndFor
+\For{$i=1$ \textbf{to} $m$}
+  \For{$j=1$ \textbf{to} $n$}
+    \If{$x_i=y_j$} $c[i,j]\gets c[i-1,j-1]+1$; $\ell[i,j]\gets\nwarrow$
+    \ElsIf{$c[i-1,j]\ge c[i,j-1]$} $c[i,j]\gets c[i-1,j]$; $\ell[i,j]\gets\uparrow$
+    \Else\ $c[i,j]\gets c[i,j-1]$; $\ell[i,j]\gets\leftarrow$
+    \EndIf
+  \EndFor
+\EndFor
+\State \Return $(c,\ell)$
+\end{algorithmic}
+\end{algorithm}
+Czas i~pamięć $\Theta(mn)$; odtworzenie (\textsc{Print-LCS}) idzie po~strzałkach $\ell$ w~czasie $O(m+n)$.
+
+\subsection*{Przykład}
+$X=(A,B,C,B,D,A,B)$, $Y=(B,D,C,A,B,A)$. Tablica $c$ daje $c[7,6]=4$, a~odtworzenie zwraca
+$\mathrm{LCS}=(B,C,B,A)$ długości $4$.
+
+\section{Zachłanny wybór zajęć}\label{sec:activity}
+\textbf{Strategia:} zachłanna. \quad\textbf{Złożoność:} $O(n\log n)$ (z~sortowaniem).
+
+\subsection*{Problem}
+Zajęcia $z_i=(s_i,t_i)$, $s_i<t_i$, jeden zasób. Zajęcia $z_i,z_j$ \emph{zgodne}, gdy przedziały
+rozłączne. Szukamy najliczniejszego podzbioru parami zgodnych.
+
+\subsection*{Idea i~algorytm}
+Sortujemy rosnąco po~czasie zakończenia $t_1\le\dots\le t_n$ i~zachłannie bierzemy zajęcie kończące się
+najwcześniej, a~potem każde kolejne zgodne z~ostatnio wybranym.
+\begin{algorithm}[H]
+\caption{Activity-Selection($s,t$) (po posortowaniu wg $t$)}
+\begin{algorithmic}[1]
+\State $A\gets\{z_1\}$; \ $j\gets 1$
+\For{$i=2$ \textbf{to} $n$}
+  \If{$s_i\ge t_j$} $A\gets A\cup\{z_i\}$; \ $j\gets i$ \EndIf
+\EndFor
+\State \Return $A$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{Poprawność}
+\begin{lemat}[wybór zachłanny]\label{lem:act}
+Niech $z_m$ ma najwcześniejszy czas zakończenia spośród rozważanych zajęć. Wtedy istnieje optymalne
+rozwiązanie zawierające $z_m$.
+\end{lemat}
+\begin{proof}
+Niech $A^\ast$ będzie optymalne i~$z_a$ jego zajęciem o~najwcześniejszym końcu. Ponieważ $t_m\le t_a$,
+zamiana $z_a\to z_m$ daje zbiór $A^\ast\setminus\{z_a\}\cup\{z_m\}$ tej samej liczności; $z_m$ jest zgodne
+z~resztą (kończy się nie później niż $z_a$, a~pozostałe zaczynają się po~$t_a\ge t_m$). Zatem to też
+rozwiązanie optymalne, zawierające $z_m$.
+\end{proof}
+\begin{twierdzenie}
+Algorytm zwraca rozwiązanie optymalne.
+\end{twierdzenie}
+\begin{proof}
+Indukcja po~$n$. Z~Lematu~\ref{lem:act} $z_1$ należy do pewnego $A^\ast$. Po wybraniu $z_1$ zostaje
+podproblem $S'=\{z_k:s_k\ge t_1\}$; $A^\ast\setminus\{z_1\}$ jest dla niego optymalne (gdyby istniało
+lepsze $B$, to $\{z_1\}\cup B$ biłoby $A^\ast$). Z~założenia indukcyjnego algorytm rozwiązuje $S'$
+optymalnie, więc $\{z_1\}\cup(\text{rozw. }S')$ jest optymalne dla $S$.
+\end{proof}
+
+\subsection*{Przykład}
+\[
+\begin{array}{c|cccccc}
+i & 1&2&3&4&5&6\\\hline
+s_i & 1&0&2&4&7&7\\
+t_i & 3&4&6&7&9&10
+\end{array}
+\]
+Po sortowaniu wg $t$: bierzemy $z_1$ ($t=3$); $z_4$ ($s=4\ge3$); $z_5$ ($s=7\ge7$). Wynik
+$A=\{z_1,z_4,z_5\}$, liczność $3$.
+
+\section{Kody Huffmana}\label{sec:huffman}
+\textbf{Strategia:} zachłanna. \quad\textbf{Złożoność:} $O(n\log n)$.
+
+\subsection*{Problem}
+Alfabet $C$, częstości $f:C\to\N$. Kod prefiksowy $\leftrightarrow$ regularne drzewo binarne (znaki w~liściach).
+Koszt $B(T)=\sum_{c\in C} f(c)\,d_T(c)$, gdzie $d_T(c)$ to głębokość liścia. Szukamy drzewa minimalizującego $B(T)$.
+
+\subsection*{Algorytm}
+\begin{algorithm}[H]
+\caption{Huffman($C,f$)}
+\begin{algorithmic}[1]
+\State $Q\gets$ kolejka priorytetowa liści $c\in C$ z~kluczem $f(c)$
+\For{$i=1$ \textbf{to} $|C|-1$}
+  \State $x\gets\textsc{Extract-Min}(Q)$; \ $y\gets\textsc{Extract-Min}(Q)$
+  \State utwórz węzeł $z$ z~dziećmi $x,y$; \ $f(z)\gets f(x)+f(y)$; \ \textsc{Insert}$(Q,z)$
+\EndFor
+\State \Return \textsc{Extract-Min}($Q$) \Comment{korzeń}
+\end{algorithmic}
+\end{algorithm}
+Na kopcu binarnym każda operacja $O(\log n)$, więc łącznie $O(n\log n)$.
+
+\subsection*{Poprawność}
+\begin{lemat}\label{lem:huff1}
+Niech $x,y$ to dwa znaki o~najmniejszych częstościach. Istnieje optymalny kod, w~którym $x,y$ są
+rodzeństwem na największej głębokości.
+\end{lemat}
+\begin{proof}
+Niech $T$ będzie optymalne, a~$a,b$ --- rodzeństwo o~największej głębokości; BSO $f(x)\le f(y)$,
+$f(a)\le f(b)$, przy czym $f(x)\le f(a)$, $f(y)\le f(b)$. Zamiana liści $x\leftrightarrow a$ daje $T'$ z~
+\[
+B(T)-B(T')=\big(f(a)-f(x)\big)\big(d_T(a)-d_T(x)\big)\ge0,
+\]
+bo oba czynniki $\ge0$ ($a$ jest najgłębsze). Skoro $T$ optymalne, $B(T')=B(T)$. Analogicznie
+$y\leftrightarrow b$. Otrzymane drzewo jest optymalne i~ma $x,y$ jako rodzeństwo najgłębiej.
+\end{proof}
+\begin{lemat}\label{lem:huff2}
+Niech $A'=(A\setminus\{x,y\})\cup\{z\}$, $f'(c)=f(c)$ dla $c\ne z$, $f'(z)=f(x)+f(y)$. Jeśli $T'$ jest
+optymalne dla $(A',f')$, to $T$ powstałe przez zastąpienie liścia $z$ węzłem z~dziećmi $x,y$ jest
+optymalne dla $(A,f)$.
+\end{lemat}
+\begin{proof}
+Z~$d_T(x)=d_T(y)=d_{T'}(z)+1$ wynika rachunkiem $B(T)=B(T')+f(x)+f(y)$. Gdyby istniało $T_{\mathrm{opt}}$ dla
+$(A,f)$ z~$B(T_{\mathrm{opt}})<B(T)$, to (na mocy Lem.~\ref{lem:huff1} z~$x,y$ jako rodzeństwem) sklejenie
+$x,y$ w~liść $z$ daje drzewo dla $(A',f')$ o~koszcie $B(T_{\mathrm{opt}})-f(x)-f(y)<B(T)-f(x)-f(y)=B(T')$
+--- sprzeczność z~optymalnością $T'$.
+\end{proof}
+\begin{twierdzenie}
+Algorytm Huffmana konstruuje optymalny kod prefiksowy.
+\end{twierdzenie}
+\begin{proof}
+Indukcja po~$|C|$, krok wprost z~Lematów~\ref{lem:huff1} i~\ref{lem:huff2} (pierwsze sklejenie łączy dwa
+najmniejsze znaki, a~na mniejszym alfabecie algorytm jest optymalny z~zał. indukcyjnego).
+\end{proof}
+
+\subsection*{Przykład}
+Częstości: $n{:}1,\ s{:}3,\ t{:}4,\ a{:}10,\ c{:}12,\ r{:}13,\ e{:}15$. Sklejenia:
+$1{+}3{=}4$, $4{+}4{=}8$, $8{+}10{=}18$, $12{+}13{=}25$, $18{+}15{=}33$, $25{+}33{=}58$.
+Słowa kodowe (np.): $c{=}00$, $r{=}01$, $e{=}10$, $a{=}111$, $t{=}1101$, $n{=}11000$, $s{=}11001$.
+Koszt $=12{\cdot}2+13{\cdot}2+15{\cdot}2+10{\cdot}3+4{\cdot}4+1{\cdot}5+3{\cdot}5=146$ bitów (kod o~stałej
+długości: $3\cdot58=174$).
+
+\section{Szeregowanie zadań}\label{sec:sched}
+Dwa warianty: (A) minimalizacja \emph{średniego czasu zakończenia} (zachłanny SPT) oraz
+(B) \emph{zadania z~terminami i~karami} (struktura matroidu) --- to drugie jest źródłem twierdzenia
+egzaminacyjnego „o~strukturze problemu szeregowania''.
+
+\subsection{Wariant A: minimalizacja średniego czasu zakończenia}
+Zadania $z_i$ o~czasach $t_i$, jeden procesor. Dla kolejności $j_1,\dots,j_n$ czas zakończenia
+$C_k=\sum_{l=1}^k t_{j_l}$, minimalizujemy $\frac1n\sum_k C_k$.
+\begin{twierdzenie}[SPT]\label{tw:spt}
+Uszeregowanie w~kolejności niemalejących czasów ($t_{j_1}\le\dots\le t_{j_n}$) minimalizuje średni czas
+zakończenia.
+\end{twierdzenie}
+\begin{proof}[Dowód (argument wymiany)]
+Jeśli optymalna permutacja nie jest posortowana, istnieją sąsiednie $j_k,j_{k+1}$ z~$t_{j_k}>t_{j_{k+1}}$.
+Zamiana zmienia jedynie $C_k$ i~daje $f(\Pi')-f(\Pi)=\frac{t_{j_{k+1}}-t_{j_k}}{n}\le0$, więc $\Pi'$ też
+optymalna. Po skończenie wielu zamianach dostajemy permutację posortowaną.
+\end{proof}
+Dla $m$ procesorów: przydzielaj zadania od najkrótszego do najdłuższego do pierwszego wolnego procesora
+(ten sam argument wymiany).
+
+\paragraph{Przykład.} $t=(15,8,3,10)$. Kolejność SPT $z_3,z_2,z_4,z_1$ daje
+$\tfrac{3+11+21+36}{4}=17{,}75$ wobec $25$ dla kolejności pierwotnej.
+
+\subsection{Wariant B: zadania z~terminami i~karami --- struktura matroidu}
+Zadania $S=\{z_1,\dots,z_n\}$ o~jednostkowym czasie, terminy $d_i\in[n]$, kary $w_i\ge0$. Karę $w_i$
+płacimy, gdy $z_i$ nie zakończy się do chwili $d_i$ (jest \emph{spóźnione}). Minimalizujemy sumę kar.
+Zbiór $A\subseteq S$ jest \emph{wolny od kar}, gdy istnieje harmonogram, w~którym wszystkie zadania $A$ są
+terminowe. Niech $N_t(A)=|\{z_i\in A:d_i\le t\}|$.
+
+\begin{lemat}[charakteryzacja, \emph{bez dowodu na egzaminie}]\label{lem:sched}
+Dla $A\subseteq S$ równoważne są: (1)~$A$ jest wolny od kar; (2)~$N_t(A)\le t$ dla każdego $t\in\{1,\dots,n\}$;
+(3)~ustawiając $A$ niemalejąco wg terminów, żadne zadanie nie jest spóźnione.
+\end{lemat}
+
+\begin{twierdzenie}[struktura problemu szeregowania]\label{tw:matroid}
+Niech $\mathcal A$ będzie rodziną wszystkich zbiorów wolnych od kar. Wtedy $(S,\mathcal A)$ jest matroidem.
+\end{twierdzenie}
+\begin{proof}
+Sprawdzamy cztery warunki definicji matroidu.
+\emph{(Skończoność)} $S$ skończony.
+\emph{(Niepustość/dziedziczność dla $\emptyset$)} $\emptyset\in\mathcal A$, a~każde $\{z_i\}$ jest wolne od kar.
+\emph{(Dziedziczność)} Jeśli $A\in\mathcal A$ i~$B\subseteq A$: z~harmonogramu dla $A$ (wszystkie terminowe)
+usuwamy zadania spoza $B$ --- pozostałe nadal terminowe, więc $B\in\mathcal A$.
+\emph{(Własność wymiany)} Niech $A,B\in\mathcal A$, $|B|>|A|$. Niech $k$ będzie największym
+$t\in\{0,\dots,n\}$ z~$N_t(B)\le N_t(A)$ (poprawne, bo $N_0=0$). Ponieważ $N_n(B)=|B|>|A|=N_n(A)$, mamy
+$k<n$ oraz $N_{k+1}(B)>N_{k+1}(A)$, więc istnieje zadanie $z\in B\setminus A$ o~terminie $d_z=k+1$.
+Niech $A'=A\cup\{z\}$. Dla $t\le k$: $N_t(A')=N_t(A)\le t$. Dla $t\ge k+1$: $N_t(A')=N_t(A)+1\le N_t(B)\le t$.
+Zatem (Lem.~\ref{lem:sched}(2)) $A'$ jest wolny od kar, czyli $A\cup\{z\}\in\mathcal A$.
+\end{proof}
+\begin{wniosek}[Rado--Edmonds]
+Ponieważ $(S,\mathcal A)$ jest matroidem, algorytm zachłanny (sortuj zadania nierosnąco wg kar $w_i$ i~dodawaj
+$z_i$, o~ile zbiór pozostaje wolny od kar) zwraca zbiór terminowy o~maksymalnej sumie wag, a~więc harmonogram
+o~minimalnej sumie kar. Złożoność $O(n^2)$ (sprawdzenie warunku $O(n)$ na zadanie).
+\end{wniosek}
+
+\paragraph{Przykład.} $d=(3,2,2,3,1,4,6,8)$ (dla $z_1{,}\dots{,}z_8$), $w=(80,70,60,50,40,30,20,10)$.
+Przetwarzając wg malejących kar: bierzemy $z_1,z_2,z_3$; odrzucamy $z_4$ ($N_3$ wzrosłoby do $4>3$) i~$z_5$
+($N_2\!\to\!3>2$); bierzemy $z_6,z_7,z_8$. Zbiór terminowy $\{z_1,z_2,z_3,z_6,z_7,z_8\}$, spóźnione $z_4,z_5$,
+suma kar $50+40=90$. Harmonogram $(z_2,z_3,z_1,z_6,z_7,z_8\mid z_4,z_5)$.
+
+\section{Greedy-Set-Cover}\label{sec:setcover}
+\textbf{Strategia:} zachłanna/aproksymacyjna. \quad\textbf{Współczynnik:} $H(\max|S|)\le \ln n+1$.
+
+\subsection*{Problem}
+Dany zbiór bazowy $X$ ($|X|=n$) i~rodzina $\mathcal F\subseteq 2^X$ z~$\bigcup_{S\in\mathcal F}S=X$.
+Szukamy najmniejszej podrodziny $\mathcal C\subseteq\mathcal F$ pokrywającej $X$. Problem NP\hbox{-}trudny.
+
+\subsection*{Algorytm}
+\begin{algorithm}[H]
+\caption{Greedy-Set-Cover($X,\mathcal F$)}
+\begin{algorithmic}[1]
+\State $U\gets X$; \ $\mathcal C\gets\emptyset$
+\While{$U\ne\emptyset$}
+  \State wybierz $S\in\mathcal F$ maksymalizujące $|S\cap U|$ \Comment{najwięcej nowych elementów}
+  \State $U\gets U\setminus S$; \ $\mathcal C\gets\mathcal C\cup\{S\}$
+\EndWhile
+\State \Return $\mathcal C$
+\end{algorithmic}
+\end{algorithm}
+Złożoność: $O\big(\sum_{S}|S|\big)=O(|X|\,|\mathcal F|\min(|X|,|\mathcal F|))$ --- wielomianowa.
+
+\subsection*{Współczynnik jakości}
+Niech $H(d)=\sum_{i=1}^d \tfrac1i$ ($H(0)=0$), $H(d)\le\ln d+1$.
+\begin{twierdzenie}[jakość Greedy-Set-Cover]\label{tw:setcover}
+Greedy-Set-Cover jest algorytmem $H(\max_{S\in\mathcal F}|S|)$-aproksymacyjnym; w~szczególności
+$H(\max|S|)\le \ln n+1$, więc współczynnik jest $O(\ln n)$.
+\end{twierdzenie}
+\begin{proof}
+Każdemu elementowi $x\in X$ przypisujemy koszt $c_x$: gdy zbiór $S_i$ wybrany w~$i$-tej iteracji
+pokrywa po raz pierwszy elementy zbioru $U_i$ (tych jeszcze niepokrytych w~$S_i$), to każdemu z~nich
+nadajemy $c_x=\tfrac{1}{|S_i\cap U_i|}$. W~każdej iteracji rozdzielamy łącznie koszt $1$, więc
+\[
+|\mathcal C|=\sum_{x\in X} c_x .
+\]
+Niech $\mathcal C^\ast$ będzie pokryciem optymalnym. Ponieważ $\mathcal C^\ast$ pokrywa $X$,
+\[
+|\mathcal C|=\sum_{x\in X}c_x\le \sum_{S\in\mathcal C^\ast}\ \sum_{x\in S} c_x .
+\]
+Wystarczy pokazać, że dla każdego $S\in\mathcal F$ zachodzi $\sum_{x\in S}c_x\le H(|S|)$. Ustalmy $S$ i~niech
+$u_i=|S\setminus(S_1\cup\dots\cup S_i)|$ będzie liczbą elementów $S$ niepokrytych po~$i$ iteracjach
+zachłannego algorytmu ($u_0=|S|$). Niech $k$ będzie pierwszą iteracją z~$u_k=0$. W~iteracji $i$ zachłanny
+wybór $S_i$ pokrywa co najmniej tyle nowych elementów co $S$, czyli $|S_i\cap U_i|\ge u_{i-1}$ (bo
+$S$ jest kandydatem pokrywającym $u_{i-1}$ niepokrytych elementów). Każdemu z~$u_{i-1}-u_i$ elementów
+$S$ pokrytych w~iteracji $i$ przypisano koszt $\tfrac{1}{|S_i\cap U_i|}\le\tfrac{1}{u_{i-1}}$. Stąd
+\[
+\sum_{x\in S}c_x\le\sum_{i=1}^k (u_{i-1}-u_i)\cdot\frac{1}{u_{i-1}}
+\le\sum_{i=1}^k\sum_{j=u_i+1}^{u_{i-1}}\frac1j
+=\sum_{j=1}^{|S|}\frac1j=H(|S|),
+\]
+gdzie skorzystaliśmy z~$\tfrac{1}{u_{i-1}}\le\tfrac1j$ dla $j\le u_{i-1}$. Zatem
+$|\mathcal C|\le\sum_{S\in\mathcal C^\ast}H(|S|)\le |\mathcal C^\ast|\,H(\max|S|)$.
+\end{proof}
+
+\subsection*{Przykład}
+$X=\{1,\dots,12\}$, $\mathcal F=\{S_1,\dots\}$ z~$S_1=\{1,2,3,4,5,6\}$, $S_2=\{5,6,7,8,9,10\}$,
+$S_3=\{1,2,3,4,5,6,7\}$? --- klasyczny przykład: pewne dwa duże zbiory pokrywają wszystko, ale zachłanny
+wybiera najpierw zbiór $6$-elementowy, potem coraz mniejsze, zwracając $3$ zbiory zamiast $2$. Ilustruje to,
+że zachłanny nie jest dokładny, lecz $\le H(6)=1+\tfrac12+\dots+\tfrac16\approx2{,}45$ razy gorszy od optimum.
+
+\section{Approx-Vertex-Cover}\label{sec:vc}
+\textbf{Strategia:} aproksymacyjna. \quad\textbf{Współczynnik:} $2$.
+
+\subsection*{Problem}
+$G=(V,E)$. \emph{Pokrycie wierzchołkowe} to $W\subseteq V$ takie, że każda krawędź ma koniec w~$W$.
+Szukamy pokrycia o~minimalnej liczności (NP\hbox{-}trudne).
+
+\subsection*{Algorytm}
+\begin{algorithm}[H]
+\caption{Approx-Vertex-Cover($G$)}
+\begin{algorithmic}[1]
+\State $C\gets\emptyset$; \ $F\gets E(G)$
+\While{$F\ne\emptyset$}
+  \State wybierz dowolną krawędź $(u,v)\in F$
+  \State $C\gets C\cup\{u,v\}$
+  \State usuń z~$F$ wszystkie krawędzie incydentne do $u$ lub $v$
+\EndWhile
+\State \Return $C$
+\end{algorithmic}
+\end{algorithm}
+Złożoność $O(V+E)$ (przy listach sąsiedztwa).
+
+\subsection*{Poprawność i~współczynnik jakości}
+\begin{twierdzenie}[jakość Approx-Vertex-Cover]\label{tw:vc}
+Approx-Vertex-Cover zwraca pokrycie wierzchołkowe o~liczności $\le 2\,|C^\ast|$, gdzie $C^\ast$ jest
+pokryciem minimalnym; jest więc algorytmem $2$-aproksymacyjnym.
+\end{twierdzenie}
+\begin{proof}
+\emph{Poprawność:} pętla działa, dopóki istnieje niepokryta krawędź, a~dodanie obu końców pokrywa ją;
+po zakończeniu $F=\emptyset$, więc $C$ pokrywa wszystkie krawędzie.
+
+\emph{Współczynnik:} niech $A$ będzie zbiorem krawędzi wybranych w~wierszu „wybierz krawędź''. Po wybraniu
+$(u,v)$ usuwamy wszystkie krawędzie incydentne do $u$ i~$v$, więc żadne dwie krawędzie z~$A$ nie dzielą
+końca --- $A$ jest \textbf{skojarzeniem}. Mamy $|C|=2|A|$. Każde pokrycie $C^\ast$ musi zawierać co najmniej
+jeden koniec każdej krawędzi z~$A$, a~krawędzie te są wierzchołkowo rozłączne, więc potrzeba $\ge|A|$
+różnych wierzchołków: $|C^\ast|\ge|A|$. Stąd
+\[
+|C|=2|A|\le 2|C^\ast|. \qedhere
+\]
+\end{proof}
+
+\subsection*{Przykład}
+Graf o~wierzchołkach $a,b,c,d,e,f$. Kolejne wybory krawędzi $(a,b),(c,d),(e,f)$ dają
+$C=\{a,b,c,d,e,f\}$ (6 wierzchołków). Skojarzenie $A=\{(a,b),(c,d),(e,f)\}$ ma $3$ krawędzie, więc
+$\OPT\ge3$, a~$|C|=6\le2\cdot\OPT$. (Pokrycie optymalne tego grafu, np. $\{a,d,e,f\}$, ma $4$ wierzchołki.)
+
+\section{Exact-Subset-Sum}\label{sec:exactss}
+\textbf{Strategia:} programowanie dynamiczne (listy sum). \quad\textbf{Złożoność:} wykładnicza w~najgorszym razie,
+wielomianowa, gdy $t$ wielomianowe.
+
+\subsection*{Problem}
+Dany $S=\{x_1,\dots,x_n\}\subseteq\N$ i~$t\in\N$. Wersja optymalizacyjna: znaleźć $S'\subseteq S$
+o~największej sumie $\le t$. Oznaczenie: $P+x=\{s+x:s\in P\}$.
+
+\begin{lemat}\label{lem:ss}
+Niech $P_0=\{0\}$, $P_i=P_{i-1}\cup(P_{i-1}+x_i)$. Wtedy $P_n$ to zbiór wszystkich sum podzbiorów $S$.
+\end{lemat}
+\begin{proof}
+Indukcja po~$i$: $P_i$ to wszystkie sumy podzbiorów $\{x_1,\dots,x_i\}$. Baza $P_0=\{0\}$ (suma $\emptyset$).
+Krok: podzbiór bez $x_i$ daje sumę z~$P_{i-1}$; z~$x_i$ --- sumę z~$P_{i-1}+x_i$.
+\end{proof}
+
+\begin{algorithm}[H]
+\caption{Exact-Subset-Sum($S,t$)}
+\begin{algorithmic}[1]
+\State $L_0\gets(0)$
+\For{$i=1$ \textbf{to} $n$}
+  \State $L_i\gets\textsc{Merge-Lists}(L_{i-1},\,L_{i-1}+x_i)$ \Comment{scalanie z~usuwaniem duplikatów}
+  \State usuń z~$L_i$ elementy $>t$
+\EndFor
+\State \Return największy element $L_n$
+\end{algorithmic}
+\end{algorithm}
+\textsc{Merge-Lists} scala dwie posortowane listy w~$\Theta(|L|+|L'|)$. Lista $L_i$ może mieć $2^i$
+elementów --- algorytm wykładniczy. Gdy jednak $t=O(n^p)$, długości $L_i\le t+1$ i~algorytm jest wielomianowy.
+
+\begin{twierdzenie}
+Problem sumy podzbiorów jest NP\hbox{-}zupełny (redukcja $3\text{-SAT}\le_p \textsc{Subset-Sum}$).
+\end{twierdzenie}
+
+\subsection*{Przykład}
+$S=\{1,4,5\}$, $t=10$. $L_0=(0)$; $L_1=(0,1)$; $L_2=(0,1,4,5)$; $L_3=(0,1,4,5,6,9,10)$ (po dodaniu
+$5$ i~odcięciu $>10$). Największy $\le10$ to $10$ (np. $1+4+5$).
+
+\section{Approx-Subset-Sum (FPTAS)}\label{sec:approxss}
+\textbf{Strategia:} aproksymacyjna (FPTAS). \quad\textbf{Współczynnik:} $1+\eps$, czas wielomianowy w~$n$ i~$1/\eps$.
+
+\subsection*{Idea: przycinanie list}
+Dla $0<\delta<1$ z~listy $L$ tworzymy krótszą $L'$ tak, by dla każdego usuniętego $y$ istniał w~$L'$
+element $z$ z~$\frac{y}{1+\delta}\le z\le y$.
+\begin{algorithm}[H]
+\caption{Trim($L,\delta$) ($L=(y_1,\dots,y_m)$ rosnąca)}
+\begin{algorithmic}[1]
+\State $L'\gets(y_1)$; \ $\mathit{last}\gets y_1$
+\For{$i=2$ \textbf{to} $m$}
+  \If{$y_i>\mathit{last}\cdot(1+\delta)$} dołącz $y_i$ do $L'$; \ $\mathit{last}\gets y_i$ \EndIf
+\EndFor
+\State \Return $L'$
+\end{algorithmic}
+\end{algorithm}
+\begin{algorithm}[H]
+\caption{Approx-Subset-Sum($S,t,\eps$)}
+\begin{algorithmic}[1]
+\State $L_0\gets(0)$
+\For{$i=1$ \textbf{to} $n$}
+  \State $L_i\gets\textsc{Merge-Lists}(L_{i-1},L_{i-1}+x_i)$
+  \State $L_i\gets\textsc{Trim}\big(L_i,\ \eps/(2n)\big)$
+  \State usuń z~$L_i$ elementy $>t$
+\EndFor
+\State \Return największy element $L_n$ (oznaczmy $z^\ast$)
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{Współczynnik jakości i~złożoność}
+\begin{twierdzenie}[FPTAS dla Subset-Sum]\label{tw:approxss}
+Niech $y^\ast$ będzie sumą optymalną ($\le t$), a~$z^\ast$ wynikiem algorytmu. Wtedy
+$\dfrac{y^\ast}{z^\ast}\le 1+\eps$, a~czas działania jest wielomianowy w~$n$ i~$1/\eps$. Algorytm jest więc
+w~pełni wielomianowym schematem aproksymacyjnym (FPTAS).
+\end{twierdzenie}
+\begin{proof}[Szkic dowodu]
+\emph{Jakość.} Indukcyjnie pokazuje się, że dla każdej sumy $y\in P_i$ (pełna lista bez przycinania)
+istnieje element $z\in L_i$ z~$\frac{y}{(1+\delta)^i}\le z\le y$, gdzie $\delta=\eps/(2n)$. Dla $i=n$ i~sumy
+optymalnej $y^\ast$ dostajemy $z^\ast\ge\frac{y^\ast}{(1+\eps/(2n))^n}$. Ponieważ
+$\big(1+\tfrac{\eps}{2n}\big)^n\le e^{\eps/2}\le 1+\eps$ (dla $0<\eps\le1$), mamy
+$\frac{y^\ast}{z^\ast}\le 1+\eps$.
+
+\emph{Złożoność.} Po przycięciu kolejne elementy $L_i$ różnią się czynnikiem $>1+\delta$, a~należą do
+$[1,t]$, więc $|L_i|\le \log_{1+\delta}t+2=O\!\big(\tfrac{n\ln t}{\eps}\big)$. Stąd łączny czas
+$O\!\big(\tfrac{n^2\ln t}{\eps}\big)$ --- wielomianowy w~rozmiarze wejścia i~$1/\eps$.
+\end{proof}
+
+\subsection*{Przykład}
+$L=(15,16,17,25,27,28,35,36,37)$, $\delta=0{,}1$. Przycinanie: $15$ zostaje; $16\le15\cdot1{,}1=16{,}5$ ---
+usuwamy; $17>16{,}5$ --- zostaje; $25$; $27,28$ usunięte przez $25\cdot1{,}1=27{,}5$? ($27\le27{,}5$ usuwamy,
+$28>27{,}5$ zostaje); itd. Wynik $L'=(15,17,25,28,35)$ --- krótsza lista, każdy usunięty element ma w~$L'$
+bliskiego reprezentanta od~dołu.
+
+\section{Maksymalne skojarzenie w~grafie dwudzielnym (MM)}\label{sec:matching}
+\textbf{Strategia:} ścieżki powiększające. \quad\textbf{Złożoność:} $O(|V|\cdot|E|)$.
+
+\subsection*{Definicje}
+$G=(V_1\cup V_2,E)$ dwudzielny. \emph{Skojarzenie} $M\subseteq E$: żadne dwie krawędzie nie mają wspólnego
+końca. Wierzchołek \emph{wolny}, gdy nie jest końcem żadnej krawędzi $M$. \emph{Ścieżka powiększająca}
+względem $M$: ścieżka prosta zaczynająca i~kończąca w~wierzchołkach wolnych, o~krawędziach
+naprzemiennie spoza $M$ i~z~$M$. Wtedy $M'=M\,\triangle\,E(P)$ jest skojarzeniem z~$|M'|=|M|+1$.
+
+\subsection*{Algorytm}
+Graf pomocniczy skierowany $G_M$: krawędzie spoza $M$ skierowane $V_1\!\to\!V_2$, krawędzie z~$M$
+skierowane $V_2\!\to\!V_1$. Ścieżka powiększająca odpowiada ścieżce skierowanej z~wolnego wierzchołka
+$V_1$ do wolnego wierzchołka $V_2$.
+\begin{algorithm}[H]
+\caption{APS($G,M$) --- szukanie ścieżki powiększającej}
+\begin{algorithmic}[1]
+\State $V_1'\gets$ wolne w~$V_1$; \ $V_2'\gets$ wolne w~$V_2$; \ zbuduj $G_M$
+\State znajdź (BFS) ścieżkę skierowaną $\overrightarrow{P}$ z~$V_1'$ do $V_2'$ w~$G_M$
+\State \textbf{jeżeli} istnieje \textbf{to} \Return $P$ \textbf{w przeciwnym razie} \Return NULL
+\end{algorithmic}
+\end{algorithm}
+\begin{algorithm}[H]
+\caption{MM($G$) --- maksymalne skojarzenie}
+\begin{algorithmic}[1]
+\State $M\gets\emptyset$
+\Repeat
+  \State $P\gets\textsc{APS}(G,M)$
+  \If{$P\ne$ NULL} $M\gets M\,\triangle\,E(P)$ \EndIf
+\Until{$P=$ NULL}
+\State \Return $M$
+\end{algorithmic}
+\end{algorithm}
+APS działa w~$O(|E|)$; pętla wykonuje się $\le|V|/2$ razy (każde powiększenie $+1$), więc całość
+$O(|V|\cdot|E|)$.
+
+\subsection*{Poprawność (twierdzenie Berge'a)}
+\begin{twierdzenie}[Berge]\label{tw:berge}
+Skojarzenie $M$ jest najliczniejsze w~$G$ wtedy i~tylko wtedy, gdy w~$G$ nie istnieje ścieżka
+powiększająca względem $M$. (Twierdzenie zachodzi dla dowolnych grafów, nie tylko dwudzielnych.)
+\end{twierdzenie}
+\begin{proof}
+($\Rightarrow$, w~postaci kontrapozycji) Jeśli istnieje ścieżka powiększająca $P$, to $M'=M\triangle E(P)$
+jest skojarzeniem o~$|M'|=|M|+1>|M|$, więc $M$ nie jest najliczniejsze.
+
+($\Leftarrow$, kontrapozycja) Załóżmy, że $M$ nie jest najliczniejsze; niech $M^\ast$ będzie skojarzeniem
+z~$|M^\ast|>|M|$. Rozważmy graf $H=(V,M\triangle M^\ast)$. Każdy wierzchołek ma w~$H$ stopień $\le2$ (co
+najwyżej jedna krawędź z~$M$ i~jedna z~$M^\ast$), więc spójne składowe $H$ to \emph{ścieżki} i~\emph{cykle}
+o~krawędziach naprzemiennie z~$M$ i~$M^\ast$. W~każdym cyklu i~każdej ścieżce parzystej długości liczby
+krawędzi z~$M$ i~$M^\ast$ są równe. Ponieważ $|M^\ast|>|M|$, krawędzi z~$M^\ast$ jest w~$M\triangle M^\ast$
+więcej niż z~$M$, więc istnieje składowa będąca \emph{ścieżką} z~przewagą krawędzi $M^\ast$ --- ścieżka
+o~nieparzystej liczbie krawędzi, zaczynająca i~kończąca się krawędzią z~$M^\ast$. Jej oba końce są wolne
+względem $M$ (gdyby koniec był pokryty krawędzią $M$, należałaby ona do tej składowej i~przedłużała
+ścieżkę), a~jej krawędzie są naprzemiennie spoza $M$ i~z~$M$. Jest to ścieżka powiększająca względem $M$.
+\end{proof}
+\begin{twierdzenie}
+Algorytm MM zwraca najliczniejsze skojarzenie.
+\end{twierdzenie}
+\begin{proof}
+Każde powiększenie zwiększa $|M|$ o~$1$ i~utrzymuje niezmiennik „$M$ jest skojarzeniem''. Algorytm kończy
+się, gdy APS nie znajduje ścieżki powiększającej; z~Lematu o~poprawności APS oznacza to brak ścieżki
+powiększającej w~$G$, a~z~Tw.~\ref{tw:berge} --- że $M$ jest najliczniejsze.
+\end{proof}
+
+\subsection*{Przykład}
+$V_1=\{u_1,u_2,u_3\}$, $V_2=\{v_1,v_2,v_3\}$, krawędzie
+$u_1v_1,u_1v_2,u_2v_1,u_3v_2,u_3v_3$. Start $M=\emptyset$. APS znajduje $u_1\!\to\!v_1$, $M=\{u_1v_1\}$;
+potem $u_3\!\to\!v_3$, $M=\{u_1v_1,u_3v_3\}$; potem ścieżka powiększająca $u_2\!\to\!v_1\!\to\!u_1\!\to\!v_2$
+(naprzemiennie spoza/z~$M$), po różnicy symetrycznej $M=\{u_2v_1,u_1v_2,u_3v_3\}$ --- skojarzenie doskonałe
+liczności $3$. Brak dalszych ścieżek $\Rightarrow$ wynik najliczniejszy.
+
+\bigskip
+\hrule
+\bigskip
+\begin{center}\Large\textbf{Część B. Pięć twierdzeń egzaminacyjnych --- skorowidz}\end{center}
+\section{Zestawienie twierdzeń z~dowodami}\label{sec:tw}
+Egzaminacyjne zadanie typu~1 wymaga sformułowania \emph{i} udowodnienia jednego z~pięciu twierdzeń.
+Pełne dowody znajdują się w~odpowiednich sekcjach; poniżej zwięzłe odsyłacze i~sformułowania.
+\begin{enumerate}[label=\textbf{(\arabic*)},leftmargin=2.2em]
+\item \textbf{Struktura problemu szeregowania zadań} (bez dowodu lematu): rodzina zbiorów wolnych od kar
+tworzy matroid --- Tw.~\ref{tw:matroid} (sekcja~\ref{sec:sched}). Korzysta z~Lematu~\ref{lem:sched}
+(charakteryzacja $N_t(A)\le t$), który na egzaminie przyjmujemy bez dowodu.
+\item \textbf{Poprawność algorytmu pary najbliższych punktów}: wystarczy sprawdzić $7$ następników w~$Y'$ ---
+Tw.~\ref{tw:closest} (sekcja~\ref{sec:closest}).
+\item \textbf{Współczynnik jakości Approx-Vertex-Cover}: algorytm jest $2$-aproksymacyjny ---
+Tw.~\ref{tw:vc} (sekcja~\ref{sec:vc}).
+\item \textbf{Współczynnik jakości Greedy-Set-Cover}: algorytm jest $H(\max|S|)\le(\ln n+1)$-aproksymacyjny
+--- Tw.~\ref{tw:setcover} (sekcja~\ref{sec:setcover}).
+\item \textbf{Twierdzenie Berge'a} o~skojarzeniu maksymalnym i~ścieżce powiększającej ---
+Tw.~\ref{tw:berge} (sekcja~\ref{sec:matching}).
+\end{enumerate}
+
+\bigskip
+\hrule
+\bigskip
+\begin{center}\Large\textbf{Część C. Projektowanie algorytmów (zadania 3--4)}\end{center}
+\section{Schemat odpowiedzi i~przykłady projektowe}\label{sec:projekt}
+
+\subsection{Schemat poprawnej odpowiedzi}
+Przy zadaniu „zaprojektuj algorytm'' należy podać:
+\begin{enumerate}[label=\arabic*.,leftmargin=1.8em]
+\item \textbf{Strategię} (dziel i~zwyciężaj / DP / zachłanny / aproksymacyjny) i~uzasadnienie wyboru
+(np. obecność optymalnej podstruktury, NP\hbox{-}trudność $\Rightarrow$ aproksymacja).
+\item \textbf{Konstrukcję} (podproblem + rekurencja dla DP; reguła wyboru dla zachłannego; podział/scal dla
+D\&Z) i~\textbf{pseudokod}.
+\item \textbf{Złożoność} (liczba podproblemów $\times$ koszt; albo rekurencja + Master Theorem).
+\item \textbf{Poprawność} (optymalna podstruktura + indukcja; lub argument wymiany; lub niezmiennik pętli).
+\item \textbf{Współczynnik jakości} dla algorytmów przybliżonych (Def.~\ref{def:approx}).
+\end{enumerate}
+
+\subsection{Przykład A (DP): ważony wybór zajęć}
+\emph{Problem:} jak wybór zajęć, lecz zajęcie $z_i$ ma wagę $v_i$; maksymalizujemy sumę wag zbioru zgodnego.
+Zachłanny „najwcześniejszy koniec'' tu zawodzi (kontrprzykład: jedno długie zajęcie o~dużej wadze).
+\emph{Rozwiązanie (DP):} sortuj wg $t_i$; niech $p(i)$ = największe $j<i$ z~$t_j\le s_i$. Wtedy
+\[
+W[i]=\max\big(W[i-1],\ v_i+W[p(i)]\big),\quad W[0]=0.
+\]
+\emph{Poprawność:} optymalne rozwiązanie albo nie zawiera $z_i$ (wtedy $W[i-1]$), albo zawiera $z_i$ i~jego
+reszta jest optymalna na zajęciach kończących się $\le s_i$ (wtedy $v_i+W[p(i)]$) --- optymalna podstruktura.
+\emph{Złożoność:} $O(n\log n)$ (sortowanie + wyszukiwanie binarne $p(i)$).
+
+\subsection{Przykład B (zachłanny + argument wymiany): minimalizacja maksymalnego opóźnienia}
+\emph{Problem:} jeden procesor, zadania o~czasach $t_i$ i~terminach $d_i$; minimalizuj
+$L_{\max}=\max_i(C_i-d_i)$. \emph{Algorytm:} EDF --- wykonuj zadania w~kolejności niemalejących terminów
+$d_i$. \emph{Poprawność (wymiana):} w~optymalnym harmonogramie bez „luk'' każda inwersja (zadanie o~większym
+terminie przed zadaniem o~mniejszym) sąsiednich zadań może być odwrócona bez wzrostu $L_{\max}$; po usunięciu
+wszystkich inwersji otrzymujemy porządek EDF. \emph{Złożoność:} $O(n\log n)$.
+
+\subsection{Przykład C (D\&Z): liczba inwersji}
+\emph{Problem:} policzyć pary $i<j$ z~$a_i>a_j$. \emph{Algorytm:} zmodyfikowany merge sort --- podczas
+scalania, gdy bierzemy element z~prawej połowy przed $k$ pozostałymi z~lewej, dodajemy $k$ do licznika.
+\emph{Rekurencja:} $T(n)=2T(n/2)+O(n)=\Theta(n\log n)$ (Master Theorem). \emph{Poprawność:} inwersje są
+albo wewnątrz połów (liczone rekurencyjnie), albo „między'' połowami (liczone przy scalaniu) --- rozłączny
+podział.
+
+\subsection{Przykład D (aproksymacja / FPTAS): problem plecakowy 0/1}
+\emph{Problem:} przedmioty o~wagach $w_i$ i~wartościach $v_i$, pojemność $W$; maksymalizuj wartość przy
+$\sum w_i\le W$ (NP\hbox{-}trudny). \emph{FPTAS} analogiczny do Approx-Subset-Sum: skaluj wartości
+$v_i'=\lfloor v_i/K\rfloor$ z~$K=\eps v_{\max}/n$, rozwiąż dokładnie DP po~wartościach w~czasie
+$O(n^2 v_{\max}'/1)=O(n^3/\eps)$; otrzymane rozwiązanie ma wartość $\ge(1-\eps)\OPT$. \emph{Idea dowodu:}
+zaokrąglenie traci na każdym z~$\le n$ wybranych przedmiotów $<K$, łącznie $<nK=\eps v_{\max}\le\eps\OPT$.
+
+\subsection{Modyfikacje dla szczególnych danych (zadanie~3)}
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{Exact-Subset-Sum, gdy $t=O(\mathrm{poly}(n))$:} listy $L_i$ mają $\le t+1$ elementów ---
+algorytm \emph{dokładny} i~\emph{wielomianowy} (pseudowielomianowy), bez potrzeby aproksymacji.
+\item \textbf{Para najbliższych punktów na prostej ($1$D):} sortuj i~porównuj sąsiadów --- $O(n\log n)$,
+faza Połącz sprawdza tylko $1$ następnika.
+\item \textbf{Vertex Cover w~drzewie/grafie dwudzielnym:} istnieje algorytm \emph{dokładny} wielomianowy
+(w~dwudzielnym: König --- min.\ pokrycie $=$ maks.\ skojarzenie, sekcja~\ref{sec:matching}); aproksymacja
+$2$ nie jest wtedy potrzebna.
+\item \textbf{Huffman przy częstościach już posortowanych:} zamiast kopca używamy dwóch kolejek FIFO ---
+czas $O(n)$ zamiast $O(n\log n)$.
+\item \textbf{Matrix-Chain dla danych o~strukturze (np. wszystkie wymiary równe):} optimum bywa dane wprost,
+bez pełnego $\Theta(n^3)$ DP.
+\end{itemize}
+
+\section*{Podsumowanie złożoności}
+\addcontentsline{toc}{section}{Podsumowanie złożoności}
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Algorytm & Strategia & Złożoność / współczynnik\\
+\midrule
+Para najbliższych punktów & dziel i~zwyciężaj & $\Theta(n\log n)$\\
+Matrix-Chain-Order & programowanie dynamiczne & $\Theta(n^3)$ czas, $\Theta(n^2)$ pamięć\\
+Strassen & dziel i~zwyciężaj & $\Theta(n^{2{,}81})$\\
+LCS & programowanie dynamiczne & $\Theta(mn)$\\
+Wybór zajęć & zachłanny & $O(n\log n)$\\
+Huffman & zachłanny & $O(n\log n)$\\
+Szeregowanie (SPT) & zachłanny (wymiana) & $O(n\log n)$\\
+Szeregowanie z~karami & zachłanny (matroid) & $O(n^2)$\\
+Greedy-Set-Cover & aproksymacyjny & $H(\max|S|)\le\ln n+1$\\
+Approx-Vertex-Cover & aproksymacyjny & współczynnik $2$, $O(V+E)$\\
+Exact-Subset-Sum & DP (listy) & wykł.; wielom.\ gdy $t$ wielom.\\
+Approx-Subset-Sum & FPTAS & $1+\eps$, $O(n^2\ln t/\eps)$\\
+MM (skojarzenie dwudzielne) & ścieżki powiększające & $O(|V|\cdot|E|)$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}
