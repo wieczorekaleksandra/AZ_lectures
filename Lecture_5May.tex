@@ -1,0 +1,345 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,
+  citecolor=blue!50!black,pdftitle={Algorytmy zaawansowane -- Wyklad 5 maja 2026}}
+
+% --- srodowiska twierdzeniowe ---
+\theoremstyle{plain}
+\newtheorem{twierdzenie}{Twierdzenie}[section]
+\newtheorem{lemat}[twierdzenie]{Lemat}
+\newtheorem{wniosek}[twierdzenie]{Wniosek}
+\newtheorem{stwierdzenie}[twierdzenie]{Stwierdzenie}
+\theoremstyle{definition}
+\newtheorem{definicja}[twierdzenie]{Definicja}
+\newtheorem{przyklad}[twierdzenie]{Przykład}
+\newtheorem{uwaga}[twierdzenie]{Uwaga}
+
+\renewcommand{\proofname}{Dowód}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\Acov}{\mathcal{A}}
+\DeclareMathOperator{\OPT}{OPT}
+
+% polskie nazwy w pseudokodzie
+\floatname{algorithm}{Algorytm}
+\renewcommand{\algorithmicrequire}{\textbf{Wejście:}}
+\renewcommand{\algorithmicensure}{\textbf{Wyjście:}}
+\renewcommand{\algorithmicwhile}{\textbf{dopóki}}
+\renewcommand{\algorithmicdo}{\textbf{wykonuj}}
+\renewcommand{\algorithmicend}{\textbf{koniec}}
+\renewcommand{\algorithmicif}{\textbf{jeżeli}}
+\renewcommand{\algorithmicthen}{\textbf{to}}
+\renewcommand{\algorithmicelse}{\textbf{w przeciwnym razie}}
+\renewcommand{\algorithmicfor}{\textbf{dla}}
+\renewcommand{\algorithmicreturn}{\textbf{zwróć}}
+
+\title{\textbf{Algorytmy zaawansowane}\\[2mm]
+\large Algorytmy aproksymacyjne: pokrycie wierzchołkowe, pokrycie zbioru\\
+oraz schematy aproksymacyjne}
+\author{Wykład --- 5 maja 2026}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Pokrycie wierzchołkowe i algorytm AVC}\label{sec:vc}
+
+\subsection*{Problem}
+Niech $G=(V,E)$ będzie grafem nieskierowanym. \emph{Pokryciem wierzchołkowym}
+(ang.\ \emph{vertex cover}) grafu $G$ nazywamy taki zbiór $W\subseteq V$, że
+\[
+\forall e\in E\quad e\cap W\neq\emptyset,
+\]
+czyli każda krawędź ma co najmniej jeden koniec w~$W$.
+
+\begin{description}[leftmargin=2em]
+\item[Instancja:] graf $G=(V,E)$.
+\item[Problem:] znaleźć pokrycie wierzchołkowe (VC) grafu $G$ o~minimalnej liczności.
+\end{description}
+
+Problem znajdowania minimalnego pokrycia wierzchołkowego jest NP-trudny, dlatego
+rozważamy algorytm aproksymacyjny \textsc{AVC} (\emph{Approximate Vertex Cover}).
+
+\subsection*{Algorytm}
+\begin{algorithm}[H]
+\caption{AVC($G$)}
+\begin{algorithmic}[1]
+\State $C\gets\emptyset$ \Comment{$C$ --- budowane rozwiązanie}
+\State $F\gets E$ \Comment{$F$ --- zbiór jeszcze nie pokrytych krawędzi}
+\While{$F\neq\emptyset$}
+  \State wybierz dowolną krawędź $uv\in F$
+  \State $C\gets C\cup\{u,v\}$
+  \State usuń z~$F$ wszystkie krawędzie incydentne z~$u$ lub~$v$
+\EndWhile
+\State \Return $C$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{Złożoność czasowa}
+Niech $n=|V(G)|$ oraz $m=|E(G)|$.
+\begin{itemize}[leftmargin=1.6em,itemsep=1pt]
+\item linia 1: $O(1)$,
+\item linia 2: $O(m)$,
+\item pętlę z~wierszy 3--6 można zaimplementować tak, aby działała w~czasie $O(m)$,
+\item linia 7: $O(1)$.
+\end{itemize}
+Łączna złożoność czasowa \textsc{AVC} wynosi $O(m)$.
+
+\subsection*{Współczynnik aproksymacji}
+\begin{twierdzenie}\label{tw:avc}
+\textsc{AVC} jest algorytmem $2$-aproksymacyjnym.
+\end{twierdzenie}
+
+\begin{proof}
+Niech $G$ będzie grafem wejściowym. Oznaczmy:
+\begin{itemize}[leftmargin=1.6em,itemsep=1pt]
+\item $c^{*}(G)$ --- najmniejszą liczbę wierzchołków w~pokryciu wierzchołkowym $G$
+(rozmiar pokrycia optymalnego),
+\item $c(G)$ --- liczbę wierzchołków w~pokryciu wierzchołkowym znalezionym przez \textsc{AVC}.
+\end{itemize}
+Niech $B$ będzie zbiorem krawędzi wybranych przez algorytm w~linii 4. Zbiór $B$ jest
+\emph{skojarzeniem} (czyli zbiorem parami rozłącznych krawędzi): po wybraniu krawędzi $uv$
+algorytm usuwa z~$F$ wszystkie krawędzie incydentne z~$u$ lub~$v$, więc żadna kolejna
+wybrana krawędź nie dzieli końca z~$uv$.
+
+Aby pokryć krawędzie z~$B$, potrzeba co najmniej $|B|$ wierzchołków (każda z~tych
+parami rozłącznych krawędzi wymaga osobnego wierzchołka pokrycia). Stąd
+\[
+c^{*}(G)\ \ge\ |B|.
+\]
+Z~drugiej strony każda wybrana krawędź wnosi do $C$ dwa wierzchołki, więc
+\[
+c(G)=2\,|B|.
+\]
+Łącząc obie nierówności,
+\[
+c(G)=2\,|B|\ \le\ 2\,c^{*}(G)
+\qquad\Longrightarrow\qquad
+\frac{c(G)}{c^{*}(G)}\ \le\ 2. \qedhere
+\]
+\end{proof}
+
+\section{Problem pokrycia zbioru i algorytm zachłanny GSC}\label{sec:sc}
+
+\subsection*{Problem}
+Niech $X$ będzie zbiorem skończonym, $|X|=n$, a $\F\subseteq 2^{X}$ rodziną podzbiorów
+zbioru $X$ taką, że
+\[
+\bigcup_{S\in\F}S=X
+\]
+(każdy element $X$ należy do co najmniej jednego zbioru z~$\F$). Rodzinę $\Acov\subseteq\F$
+nazywamy \emph{pokryciem} zbioru $X$, jeśli
+\[
+\bigcup_{S\in\Acov}S=X.
+\]
+
+\begin{description}[leftmargin=2em]
+\item[Instancja:] para $(X,\F)$, gdzie $X$ jest zbiorem skończonym, $|X|=n$,
+oraz $\F\subseteq 2^{X}$, $\bigcup_{S\in\F}S=X$.
+\item[Problem:] znaleźć pokrycie $\Acov\subseteq\F$ minimalizujące $|\Acov|$.
+\end{description}
+
+\begin{przyklad}
+Dla rodziny $\F=\{S_1,S_2,S_3,S_4,S_5,S_6\}$ pokrywającej $X$ podrodzina
+$\{S_1,S_2,S_3\}$ może być pokryciem zbioru $X$.
+\end{przyklad}
+
+\subsection*{Algorytm}
+\begin{algorithm}[H]
+\caption{GSC($X,\F$) --- Greedy Set Cover}
+\begin{algorithmic}[1]
+\State $U\gets X$ \Comment{$U$ --- zbiór jeszcze nie pokrytych elementów}
+\State $\Acov\gets\emptyset$ \Comment{$\Acov$ --- budowane rozwiązanie}
+\While{$U\neq\emptyset$}
+  \State wybierz $S\in\F$ maksymalizujący $|S\cap U|$
+  \State $\Acov\gets\Acov\cup\{S\}$
+  \State $U\gets U-S$
+\EndWhile
+\State \Return $\Acov$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection*{Poprawność}
+Pętla obraca się dopóki są jeszcze nie pokryte elementy, a~w~każdym obrocie pętli
+jakieś elementy zostają pokryte (wybrany $S$ maksymalizuje $|S\cap U|$, a~ponieważ
+$\F$ pokrywa $X$ i~$U\neq\emptyset$, to $|S\cap U|\ge 1$). Zatem algorytm zatrzymuje
+się i~zwraca pokrycie $X$.
+
+\subsection*{Złożoność czasowa}
+\begin{itemize}[leftmargin=1.6em,itemsep=1pt]
+\item linia 1: $O(n)$,
+\item linia 2: $O(1)$,
+\item liczba iteracji pętli z~wierszy 3--6 jest $\le|X|$ oraz $\le|\F|$, więc jest
+$\le\min\{|X|,|\F|\}$; wewnątrz pojedynczej iteracji:
+\begin{itemize}[leftmargin=1.6em,itemsep=0pt]
+\item linia 4: $O(|X|\cdot|\F|)$,
+\item linia 5: $O(1)$,
+\item linia 6: $O(|X|)$,
+\end{itemize}
+co daje $O(|X|\cdot|\F|)$ na iterację,
+\item linia 7: $O(1)$.
+\end{itemize}
+Ostatecznie złożoność czasowa \textsc{GSC} wynosi
+\[
+O\bigl(|X|\cdot|\F|\cdot\min\{|X|,|\F|\}\bigr).
+\]
+
+\subsection*{Współczynnik aproksymacji}
+Przez $H$ oznaczamy liczby harmoniczne:
+\[
+H(0)=0,\qquad H(m)=1+\tfrac12+\tfrac13+\dots+\tfrac1m\quad\text{dla }m\ge 1.
+\]
+
+\begin{twierdzenie}\label{tw:gsc}
+\textsc{GSC} jest algorytmem $H\!\bigl(\max\{|S|:S\in\F\}\bigr)$-aproksymacyjnym.
+\end{twierdzenie}
+
+\begin{proof}
+Niech $(X,\F)$ będzie instancją wejściową. Oznaczmy przez $\Acov^{*}$ optymalne
+pokrycie dla $(X,\F)$, a~przez $\Acov$ pokrycie znalezione przez \textsc{GSC}.
+Niech $S_i$ będzie zbiorem wybranym przez algorytm w~linii 4 w~$i$-tej iteracji pętli.
+
+\medskip
+\noindent\textbf{Przypisanie kosztów.} Każdemu elementowi
+$x\in S_i-(S_1\cup\dots\cup S_{i-1})$ (czyli elementowi pokrytemu po raz pierwszy
+w~$i$-tej iteracji) przypisujemy koszt
+\[
+c_x=\frac{1}{\bigl|S_i-(S_1\cup\dots\cup S_{i-1})\bigr|}.
+\]
+Zbiór $S_i-(S_1\cup\dots\cup S_{i-1})$ to zbiór elementów pokrytych po raz pierwszy
+w~$i$-tej iteracji, więc całkowity koszt przypisany podczas jednej iteracji wynosi $1$.
+Ponieważ $|\Acov|$ jest liczbą iteracji pętli, mamy
+\[
+|\Acov|=\sum_{x\in X}c_x.
+\]
+
+\medskip
+\noindent\textbf{Oszacowanie przez pokrycie optymalne.} Skoro $\Acov^{*}$ jest pokryciem,
+każdy $x\in X$ występuje w~co najmniej jednym zbiorze $S\in\Acov^{*}$, więc
+\[
+\sum_{S\in\Acov^{*}}\ \sum_{x\in S}c_x\ \ge\ \sum_{x\in X}c_x=|\Acov|.
+\]
+Pokażemy, że
+\[
+\sum_{x\in S}c_x\ \le\ H(|S|)\qquad\text{dla każdego }S\in\F.
+\]
+Niech $S\in\F$. Dla $i\in\{1,2,\dots,|\Acov|\}$ niech
+\[
+n_i=\bigl|S-(S_1\cup\dots\cup S_i)\bigr|
+\]
+(liczba elementów $S$, które nie są pokryte po $i$-tej iteracji) oraz $n_0=|S|$.
+Niech $k$ będzie najmniejsze takie, że $n_k=0$ (wtedy $S$ jest pokryty przez
+$S_1\cup S_2\cup\dots\cup S_k$). Oczywiście $n_{i-1}\ge n_i$ dla $i\in[k]$, a~różnica
+$n_{i-1}-n_i$ to liczba elementów $S$ pokrytych po raz pierwszy przez $S_i$. Zatem
+\[
+\sum_{x\in S}c_x=\sum_{i=1}^{k}(n_{i-1}-n_i)\cdot
+\frac{1}{\bigl|S_i-(S_1\cup\dots\cup S_{i-1})\bigr|}.
+\]
+Na podstawie wyboru zachłannego w~linii 4 mamy
+\[
+\bigl|S_i-(S_1\cup\dots\cup S_{i-1})\bigr|\ \ge\
+\bigl|S-(S_1\cup\dots\cup S_{i-1})\bigr|=n_{i-1}
+\qquad\text{dla każdego }S\in\F-\{S_1,\dots,S_{i-1}\}.
+\]
+Stąd
+\begin{align*}
+\sum_{x\in S}c_x
+&\le\sum_{i=1}^{k}(n_{i-1}-n_i)\cdot\frac{1}{n_{i-1}}
+=\sum_{i=1}^{k}\ \sum_{j=n_i+1}^{n_{i-1}}\frac{1}{n_{i-1}}
+\ \le\ \sum_{i=1}^{k}\ \sum_{j=n_i+1}^{n_{i-1}}\frac{1}{j}\\[2pt]
+&=\sum_{i=1}^{k}\Bigl(\sum_{j=1}^{n_{i-1}}\frac1j-\sum_{j=1}^{n_i}\frac1j\Bigr)
+=\sum_{i=1}^{k}\bigl(H(n_{i-1})-H(n_i)\bigr)\\[2pt]
+&=H(n_0)-H(n_k)=H(|S|)-H(0)=H(|S|),
+\end{align*}
+gdzie wykorzystaliśmy teleskopowanie sumy.
+
+\medskip
+\noindent\textbf{Złożenie oszacowań.}
+\begin{align*}
+|\Acov|=\sum_{x\in X}c_x
+&\le\sum_{S\in\Acov^{*}}\ \sum_{x\in S}c_x
+\ \le\ \sum_{S\in\Acov^{*}}H(|S|)
+\ \le\ \sum_{S\in\Acov^{*}}\max\{H(|S|):S\in\Acov^{*}\}\\
+&=|\Acov^{*}|\cdot\max\{H(|S|):S\in\Acov^{*}\}
+\ \le\ |\Acov^{*}|\cdot\max\{H(|S|):S\in\F\}\\
+&=|\Acov^{*}|\cdot H\!\bigl(\max\{|S|:S\in\F\}\bigr),
+\end{align*}
+a~więc
+\[
+\frac{|\Acov|}{|\Acov^{*}|}\ \le\ H\!\bigl(\max\{|S|:S\in\F\}\bigr). \qedhere
+\]
+\end{proof}
+
+\begin{wniosek}\label{wn:gsc-ln}
+\textsc{GSC} jest algorytmem $(\ln|X|+1)$-aproksymacyjnym.
+\end{wniosek}
+\begin{proof}
+Ponieważ $H(n)\le\ln n+1$, to
+\[
+H\!\bigl(\max\{|S|:S\in\F\}\bigr)\ \le\ H(|X|)\ \le\ \ln|X|+1. \qedhere
+\]
+\end{proof}
+
+\subsection*{Pokrycie wierzchołkowe jako szczególny przypadek pokrycia zbioru}
+Pokrycie wierzchołkowe jest szczególnym przypadkiem problemu pokrycia zbioru. Dla
+$G=(V,E)$ przyjmujemy
+\[
+X=E,\qquad \F=\{E(v):v\in V\},\qquad\text{gdzie}\quad E(v)=\{e\in E: v\in e\},
+\]
+przy czym $|E(v)|=d(v)$ (stopień wierzchołka $v$). Wtedy
+\[
+\max\{|E(v)|:E(v)\in\F\}=\Delta(G),
+\]
+więc \textsc{GSC} daje dla pokrycia wierzchołkowego współczynnik $H(\Delta(G))$.
+Ponieważ
+\[
+H(3)=1+\tfrac12+\tfrac13=\tfrac{11}{6}<2<\tfrac{25}{12}=H(4),
+\]
+dla grafów o~maksymalnym stopniu $\le 3$ oszacowanie współczynnika aproksymacyjnego
+\textsc{GSC} jest lepsze niż oszacowanie dla \textsc{AVC}.
+
+\section{Schematy aproksymacyjne}\label{sec:schemes}
+
+Niech $\Pi$ będzie problemem optymalizacyjnym (NP-trudnym).
+
+\begin{definicja}[schemat aproksymacyjny]
+Algorytm $A$ jest \emph{schematem aproksymacyjnym} dla $\Pi$, jeśli dla dowolnego
+wejścia $(I,\eps)$, gdzie $I$ jest instancją $\Pi$ oraz $\eps>0$, algorytm $A$ jest
+algorytmem $(1+\eps)$-aproksymacyjnym.
+\end{definicja}
+
+\begin{definicja}[wielomianowy schemat aproksymacyjny, PTAS]
+Schemat aproksymacyjny $A$ nazywamy \emph{wielomianowym schematem aproksymacyjnym}
+(PTAS), jeśli jego złożoność czasowa może być ograniczona funkcją wielomianową
+względem $|I|$ dla każdego ustalonego $\eps>0$.
+\end{definicja}
+Złożoność czasowa wielomianowego schematu aproksymacyjnego może wynosić np.
+$\Theta\!\bigl(2^{1/\eps}\,n^2\bigr)$, gdzie $n=|I|$. Wtedy zwiększanie precyzji
+(czyli zmniejszanie $\eps$) jest kosztowne czasowo.
+
+\begin{definicja}[w pełni wielomianowy schemat aproksymacyjny, FPTAS]
+Schemat aproksymacyjny $A$ nazywamy \emph{w~pełni wielomianowym schematem
+aproksymacyjnym} (FPTAS), jeśli jego złożoność czasowa może być ograniczona funkcją
+wielomianową względem $|I|$ oraz $\tfrac1\eps$.
+\end{definicja}
+Złożoność czasowa w~pełni wielomianowego schematu aproksymacyjnego może wynosić np.
+$\Theta\!\bigl(n^2\cdot\tfrac1\eps\bigr)$, gdzie $n=|I|$.
+
+\end{document}
